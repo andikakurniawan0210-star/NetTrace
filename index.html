@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>TP/SL Monitor</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+
+        <div class="brand">
+            <div class="brand-icon">↗</div>
+
+            <div>
+                <h1>TP/SL Monitor</h1>
+                <span>Trading Alert System</span>
+            </div>
+        </div>
+
+        <div class="live-status">
+            <span></span>
+            LIVE
+        </div>
+
+    </header>
+
+
+    <main>
+
+        <!-- PRICE SECTION -->
+        <section class="price-card">
+
+            <div class="price-header">
+
+                <div>
+                    <span class="label">HARGA LIVE</span>
+
+                    <h2 id="livePrice">
+                        Rp 1.147.628.678
+                    </h2>
+
+                    <div class="price-change positive">
+                        +1.24%
+                        <span>● Market Active</span>
+                    </div>
+                </div>
+
+                <div class="pair-badge">
+                    BTC/IDR
+                </div>
+
+            </div>
+
+            <div class="price-line"></div>
+
+            <div class="market-info">
+
+                <div>
+                    <span>HIGH</span>
+                    <strong id="highPrice">
+                        Rp 1.165.000.000
+                    </strong>
+                </div>
+
+                <div>
+                    <span>LOW</span>
+                    <strong id="lowPrice">
+                        Rp 1.125.000.000
+                    </strong>
+                </div>
+
+                <div>
+                    <span>UPDATE</span>
+                    <strong id="lastUpdate">
+                        --:--
+                    </strong>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- CREATE MONITOR -->
+        <section class="panel">
+
+            <div class="section-title">
+
+                <div>
+                    <h2>Buat Monitoring</h2>
+                    <p>Tentukan level TP dan SL yang ingin dipantau.</p>
+                </div>
+
+                <div class="section-number">
+                    01
+                </div>
+
+            </div>
+
+
+            <form id="monitorForm">
+
+                <!-- PAIR -->
+                <div class="field">
+
+                    <label>PAIR</label>
+
+                    <div class="select-wrapper">
+
+                        <select id="pair">
+
+                            <option value="BTC/IDR">
+                                BTC / IDR
+                            </option>
+
+                            <option value="ETH/IDR">
+                                ETH / IDR
+                            </option>
+
+                            <option value="SOL/IDR">
+                                SOL / IDR
+                            </option>
+
+                            <option value="BTC/USDT">
+                                BTC / USDT
+                            </option>
+
+                            <option value="ETH/USDT">
+                                ETH / USDT
+                            </option>
+
+                        </select>
+
+                        <span>⌄</span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- SIDE -->
+                <div class="field">
+
+                    <label>POSISI</label>
+
+                    <div class="side-selector">
+
+                        <button
+                            type="button"
+                            class="side-btn buy active"
+                            data-side="BUY"
+                        >
+                            <span>↗</span>
+                            BUY
+                        </button>
+
+                        <button
+                            type="button"
+                            class="side-btn sell"
+                            data-side="SELL"
+                        >
+                            <span>↘</span>
+                            SELL
+                        </button>
+
+                    </div>
+
+                    <input
+                        type="hidden"
+                        id="side"
+                        value="BUY"
+                    >
+
+                </div>
+
+
+                <!-- ENTRY -->
+                <div class="field">
+
+                    <label>ENTRY PRICE</label>
+
+                    <div class="input-box">
+
+                        <span>Rp</span>
+
+                        <input
+                            id="entry"
+                            type="number"
+                            placeholder="Masukkan harga entry"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- TP / SL -->
+                <div class="two-columns">
+
+                    <div class="field">
+
+                        <label class="tp-label">
+                            TAKE PROFIT
+                        </label>
+
+                        <div class="input-box tp-input">
+
+                            <span>Rp</span>
+
+                            <input
+                                id="tp"
+                                type="number"
+                                placeholder="Harga TP"
+                                required
+                            >
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="field">
+
+                        <label class="sl-label">
+                            STOP LOSS
+                        </label>
+
+                        <div class="input-box sl-input">
+
+                            <span>Rp</span>
+
+                            <input
+                                id="sl"
+                                type="number"
+                                placeholder="Harga SL"
+                                required
+                            >
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="formMessage"
+                    class="form-message"
+                ></div>
+
+
+                <button
+                    type="submit"
+                    class="start-button"
+                >
+                    <span>◉</span>
+                    MULAI MONITORING
+                </button>
+
+            </form>
+
+        </section>
+
+
+        <!-- ACTIVE MONITORING -->
+        <section class="panel">
+
+            <div class="section-title">
+
+                <div>
+                    <h2>Monitoring Aktif</h2>
+                    <p>Alert yang sedang dipantau.</p>
+                </div>
+
+                <div
+                    class="counter"
+                    id="activeCounter"
+                >
+                    0
+                </div>
+
+            </div>
+
+
+            <div id="monitorList">
+
+                <div
+                    id="emptyMonitor"
+                    class="empty-state"
+                >
+
+                    <div class="empty-icon">
+                        ◌
+                    </div>
+
+                    <strong>
+                        Belum ada monitoring
+                    </strong>
+
+                    <p>
+                        Buat monitoring TP/SL untuk
+                        mulai memantau harga.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- NOTIFICATIONS -->
+        <section class="panel notification-panel">
+
+            <div class="section-title">
+
+                <div>
+                    <h2>Notification</h2>
+                    <p>Riwayat TP dan SL yang terpicu.</p>
+                </div>
+
+                <button
+                    id="clearHistory"
+                    class="clear-button"
+                >
+                    CLEAR
+                </button>
+
+            </div>
+
+
+            <div id="notificationList">
+
+                <div class="empty-state small">
+                    Belum ada notification.
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- BOTTOM INFO -->
+    <footer>
+
+        <div class="footer-status">
+            <span></span>
+            Monitoring Engine Ready
+        </div>
+
+        <div>
+            TP/SL Monitor v1.0
+        </div>
+
+    </footer>
+
+
+    <!-- TOAST -->
+    <div id="toast" class="toast">
+
+        <div id="toastIcon">
+            ✓
+        </div>
+
+        <div>
+            <strong id="toastTitle">
+                Notification
+            </strong>
+
+            <p id="toastText">
+                -
+            </p>
+        </div>
+
+    </div>
+
+</div>
+
+
+<script src="script.js"></script>
+
+</body>
+</html>
