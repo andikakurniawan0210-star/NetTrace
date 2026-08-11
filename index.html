@@ -2,393 +2,234 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>TP/SL Monitor</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NetTrace | Premium Terminal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-<div class="app">
-
-    <!-- TOP BAR -->
-    <header class="topbar">
-
-        <div class="brand">
-            <div class="brand-icon">↗</div>
-
-            <div>
-                <h1>TP/SL Monitor</h1>
-                <span>Trading Alert System</span>
-            </div>
+<!-- Loading Screen -->
+<div id="loader-wrapper">
+    <div class="loader-content">
+        <div class="loader-logo">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="url(#logo-grad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <defs>
+                    <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#00f2fe" />
+                        <stop offset="100%" stop-color="#4facfe" />
+                    </linearGradient>
+                </defs>
+                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+                <polyline points="16 7 22 7 22 13"></polyline>
+            </svg>
+            <span>NetTrace</span>
         </div>
-
-        <div class="live-status">
-            <span></span>
-            LIVE
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
         </div>
-
-    </header>
-
-
-    <main>
-
-        <!-- PRICE SECTION -->
-        <section class="price-card">
-
-            <div class="price-header">
-
-                <div>
-                    <span class="label">HARGA LIVE</span>
-
-                    <h2 id="livePrice">
-                        Rp 1.147.628.678
-                    </h2>
-
-                    <div class="price-change positive">
-                        +1.24%
-                        <span>● Market Active</span>
-                    </div>
-                </div>
-
-                <div class="pair-badge">
-                    BTC/IDR
-                </div>
-
-            </div>
-
-            <div class="price-line"></div>
-
-            <div class="market-info">
-
-                <div>
-                    <span>HIGH</span>
-                    <strong id="highPrice">
-                        Rp 1.165.000.000
-                    </strong>
-                </div>
-
-                <div>
-                    <span>LOW</span>
-                    <strong id="lowPrice">
-                        Rp 1.125.000.000
-                    </strong>
-                </div>
-
-                <div>
-                    <span>UPDATE</span>
-                    <strong id="lastUpdate">
-                        --:--
-                    </strong>
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- CREATE MONITOR -->
-        <section class="panel">
-
-            <div class="section-title">
-
-                <div>
-                    <h2>Buat Monitoring</h2>
-                    <p>Tentukan level TP dan SL yang ingin dipantau.</p>
-                </div>
-
-                <div class="section-number">
-                    01
-                </div>
-
-            </div>
-
-
-            <form id="monitorForm">
-
-                <!-- PAIR -->
-                <div class="field">
-
-                    <label>PAIR</label>
-
-                    <div class="select-wrapper">
-
-                        <select id="pair">
-
-                            <option value="BTC/IDR">
-                                BTC / IDR
-                            </option>
-
-                            <option value="ETH/IDR">
-                                ETH / IDR
-                            </option>
-
-                            <option value="SOL/IDR">
-                                SOL / IDR
-                            </option>
-
-                            <option value="BTC/USDT">
-                                BTC / USDT
-                            </option>
-
-                            <option value="ETH/USDT">
-                                ETH / USDT
-                            </option>
-
-                        </select>
-
-                        <span>⌄</span>
-
-                    </div>
-
-                </div>
-
-
-                <!-- SIDE -->
-                <div class="field">
-
-                    <label>POSISI</label>
-
-                    <div class="side-selector">
-
-                        <button
-                            type="button"
-                            class="side-btn buy active"
-                            data-side="BUY"
-                        >
-                            <span>↗</span>
-                            BUY
-                        </button>
-
-                        <button
-                            type="button"
-                            class="side-btn sell"
-                            data-side="SELL"
-                        >
-                            <span>↘</span>
-                            SELL
-                        </button>
-
-                    </div>
-
-                    <input
-                        type="hidden"
-                        id="side"
-                        value="BUY"
-                    >
-
-                </div>
-
-
-                <!-- ENTRY -->
-                <div class="field">
-
-                    <label>ENTRY PRICE</label>
-
-                    <div class="input-box">
-
-                        <span>Rp</span>
-
-                        <input
-                            id="entry"
-                            type="number"
-                            placeholder="Masukkan harga entry"
-                            required
-                        >
-
-                    </div>
-
-                </div>
-
-
-                <!-- TP / SL -->
-                <div class="two-columns">
-
-                    <div class="field">
-
-                        <label class="tp-label">
-                            TAKE PROFIT
-                        </label>
-
-                        <div class="input-box tp-input">
-
-                            <span>Rp</span>
-
-                            <input
-                                id="tp"
-                                type="number"
-                                placeholder="Harga TP"
-                                required
-                            >
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="field">
-
-                        <label class="sl-label">
-                            STOP LOSS
-                        </label>
-
-                        <div class="input-box sl-input">
-
-                            <span>Rp</span>
-
-                            <input
-                                id="sl"
-                                type="number"
-                                placeholder="Harga SL"
-                                required
-                            >
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <div
-                    id="formMessage"
-                    class="form-message"
-                ></div>
-
-
-                <button
-                    type="submit"
-                    class="start-button"
-                >
-                    <span>◉</span>
-                    MULAI MONITORING
-                </button>
-
-            </form>
-
-        </section>
-
-
-        <!-- ACTIVE MONITORING -->
-        <section class="panel">
-
-            <div class="section-title">
-
-                <div>
-                    <h2>Monitoring Aktif</h2>
-                    <p>Alert yang sedang dipantau.</p>
-                </div>
-
-                <div
-                    class="counter"
-                    id="activeCounter"
-                >
-                    0
-                </div>
-
-            </div>
-
-
-            <div id="monitorList">
-
-                <div
-                    id="emptyMonitor"
-                    class="empty-state"
-                >
-
-                    <div class="empty-icon">
-                        ◌
-                    </div>
-
-                    <strong>
-                        Belum ada monitoring
-                    </strong>
-
-                    <p>
-                        Buat monitoring TP/SL untuk
-                        mulai memantau harga.
-                    </p>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <!-- NOTIFICATIONS -->
-        <section class="panel notification-panel">
-
-            <div class="section-title">
-
-                <div>
-                    <h2>Notification</h2>
-                    <p>Riwayat TP dan SL yang terpicu.</p>
-                </div>
-
-                <button
-                    id="clearHistory"
-                    class="clear-button"
-                >
-                    CLEAR
-                </button>
-
-            </div>
-
-
-            <div id="notificationList">
-
-                <div class="empty-state small">
-                    Belum ada notification.
-                </div>
-
-            </div>
-
-        </section>
-
-    </main>
-
-
-    <!-- BOTTOM INFO -->
-    <footer>
-
-        <div class="footer-status">
-            <span></span>
-            Monitoring Engine Ready
-        </div>
-
-        <div>
-            TP/SL Monitor v1.0
-        </div>
-
-    </footer>
-
-
-    <!-- TOAST -->
-    <div id="toast" class="toast">
-
-        <div id="toastIcon">
-            ✓
-        </div>
-
-        <div>
-            <strong id="toastTitle">
-                Notification
-            </strong>
-
-            <p id="toastText">
-                -
-            </p>
-        </div>
-
+        <p class="loader-text"><span id="progress-text">1%</span></p>
     </div>
-
 </div>
 
+<!-- Modal Disclaimer Pengguna Pertama -->
+<div id="disclaimer-modal" class="modal-wrapper">
+    <div class="modal-content disclaimer-content">
+        <div class="modal-header">
+            <h3>⚠️ DISCLAIMER PENTING</h3>
+        </div>
+        <div class="modal-body">
+            <ul class="disclaimer-list">
+                <li>📌 <strong>Bukan Penasihat Keuangan:</strong> NetTrace Pro hanyalah alat bantu monitoring dan kalkulator mandiri.</li>
+                <li>⚠️ <strong>Risiko Mandiri:</strong> Segala keputusan trading, profit, maupun kerugian (loss) adalah tanggung jawab penuh kamu sendiri.</li>
+                <li>🛡️ <strong>Bukan Jaminan:</strong> Developer tidak bertanggung jawab atas gangguan jaringan atau fluktuasi harga pasar.</li>
+            </ul>
+            <p class="disclaimer-note">Dengan melanjutkan, kamu dianggap sudah mengerti dan setuju.</p>
+            <button class="btn-main btn-agree" onclick="acceptDisclaimer()">Saya Mengerti & Setuju</button>
+        </div>
+    </div>
+</div>
 
+<!-- Modal Custom Fee -->
+<div id="fee-modal" class="modal-wrapper">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>⚙️ Pengaturan Fee Exchange</h3>
+            <span class="close-btn" onclick="closeFeeModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>Masukkan persentase biaya transaksi (fee) bursa kamu (misal: 0.21 untuk Indodax, 0.1 untuk Binance). Isikan 0 jika tidak ingin menghitung fee.</p>
+            <div class="input-group">
+                <label for="fee-input">Fee Transaksi Total (%)</label>
+                <input type="text" id="fee-input" placeholder="Contoh: 0.21" value="" oninput="saveInputsToStorage()">
+            </div>
+            <br>
+            <button class="btn-main" onclick="closeFeeModal()">Simpan & Terapkan</button>
+        </div>
+    </div>
+</div>
+
+<!-- Banner Alert In-App -->
+<div id="app-alert" class="app-alert">
+    <div class="alert-icon" id="alert-icon">🔔</div>
+    <div class="alert-content">
+        <div class="alert-title" id="alert-title">Target Reached</div>
+        <div class="alert-desc" id="alert-desc">Keterangan target trading...</div>
+    </div>
+    <button class="alert-close" onclick="closeAppAlert()">&times;</button>
+</div>
+
+<div class="app-container">
+    <!-- Header App -->
+    <header class="top-nav">
+        <div class="brand-title">
+            <div class="brand-logo-icon">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+            </div>
+            <span class="brand-text">NET<span class="brand-sub">TRACE</span></span> 
+            <span class="pro-tag">PRO</span>
+        </div>
+        <div class="header-right">
+            <!-- Dropdown Selector Aset Multi-Koin -->
+            <div class="asset-dropdown-wrapper">
+                <div class="pulse-dot"></div>
+                <select id="asset-select" class="asset-select" onchange="changeAsset(this.value)">
+                    <option value="btc">BTC/IDR</option>
+                    <option value="eth">ETH/IDR</option>
+                    <option value="sol">SOL/IDR</option>
+                    <option value="doge">DOGE/IDR</option>
+                    <option value="xrp">XRP/IDR</option>
+                </select>
+            </div>
+            
+            <div class="notif-wrapper">
+                <button class="icon-btn notif-btn" onclick="toggleNotifPop()" title="Notifikasi Sistem">
+                    🔔
+                    <span id="notif-dot" class="notif-dot hidden"></span>
+                </button>
+                <div id="notif-pop" class="notif-pop">
+                    <div class="notif-pop-header">Status Notifikasi</div>
+                    <div class="notif-pop-body" id="notif-pop-body">Belum ada notifikasi aktif.</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Ticker & Live Portfolio Banner -->
+    <section class="card ticker-card">
+        <div class="ticker-item">
+            <span class="label" id="live-price-label">Harga Live Indodax (BTC)</span>
+            <span class="price-text" id="current-price">Rp --</span>
+        </div>
+        <div class="ticker-item text-right">
+            <span class="label">Estimasi Modal</span>
+            <div class="pl-badge" id="portfolio-value">Rp 0,00 (0.00%)</div>
+        </div>
+    </section>
+
+    <!-- Chart Container -->
+    <section class="card chart-card">
+        <div id="tradingview_chart" style="height:100%; width:100%;"></div>
+    </section>
+
+    <!-- Rekomendasi Aksi Card -->
+    <section class="card recom-card">
+        <div class="recom-header">
+            <span class="label">Rekomendasi Aksi Real-Time</span>
+            <div id="recom-badge" class="recom-badge standby">STANDBY</div>
+        </div>
+        <div class="recom-desc" id="recom-desc">
+            Sistem siap. Masukkan modal & target lalu klik Mulai Monitoring.
+        </div>
+    </section>
+
+    <!-- Parameter Config Form -->
+    <section class="card config-card">
+        <div class="card-title">
+            <span>PARAMETER TRADING</span>
+            <div class="glow-line"></div>
+        </div>
+
+        <div class="form-grid">
+            <div class="input-group">
+                <label for="modal-input">Modal Beli (Rp)</label>
+                <div class="input-wrapper">
+                    <input type="text" id="modal-input" placeholder="Contoh: 100.000" oninput="formatRupiahInput(this)">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="tp-price">Target TP (Rp)</label>
+                <div class="input-wrapper">
+                    <input type="text" id="tp-price" placeholder="Contoh: 105.000" oninput="formatRupiahInput(this)">
+                    <div class="quick-btn-overlay">
+                        <button type="button" class="quick-btn tp-quick" onclick="setQuickPercent('TP', 3)">+3%</button>
+                        <button type="button" class="quick-btn tp-quick" onclick="setQuickPercent('TP', 5)">+5%</button>
+                        <button type="button" class="quick-btn tp-quick" onclick="setQuickPercent('TP', 10)">+10%</button>
+                        <button type="button" class="quick-btn tp-quick" onclick="setQuickPercent('TP', 20)">+20%</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="sl-price">Target SL (Rp)</label>
+                <div class="input-wrapper">
+                    <input type="text" id="sl-price" placeholder="Contoh: 95.000" oninput="formatRupiahInput(this)">
+                    <div class="quick-btn-overlay">
+                        <button type="button" class="quick-btn sl-quick" onclick="setQuickPercent('SL', 3)">-3%</button>
+                        <button type="button" class="quick-btn sl-quick" onclick="setQuickPercent('SL', 5)">-5%</button>
+                        <button type="button" class="quick-btn sl-quick" onclick="setQuickPercent('SL', 10)">-10%</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tombol Lock Profit -->
+        <button id="lock-profit-btn" class="btn-lock-profit hidden" onclick="lockProfitAndUpdateModal()">
+            🔒 LOCK PROFIT / UPDATE MODAL
+        </button>
+
+        <!-- Buttons -->
+        <div class="button-group">
+            <button id="start-btn" class="btn-main" onclick="startMonitoring()">
+                <span>MULAI MONITORING</span>
+            </button>
+            <button class="btn-fee" onclick="openFeeModal()" title="Pengaturan Custom Fee">⚙️ Fee</button>
+            <button id="reset-btn" class="btn-reset" onclick="stopMonitoring()">RESET</button>
+        </div>
+
+        <div class="status-footer-row">
+            <div class="status-bar" id="status-text">Status: Siap monitoring.</div>
+            <button class="info-btn" onclick="openInfoModal()" title="Informasi Aplikasi">i</button>
+        </div>
+    </section>
+
+    <footer class="footer">
+        Created by <span>Zenn</span>
+    </footer>
+</div>
+
+<!-- Modal Informasi -->
+<div id="info-modal" class="modal-wrapper">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Tentang NetTrace Pro</h3>
+            <span class="close-btn" onclick="closeInfoModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p><strong>NetTrace</strong> adalah terminal pemantau real-time pergerakan nilai modal trading crypto berbasis notifikasi otomatis via Telegram, In-App Alert, dan Alarm Suara.</p>
+            <ul>
+                <li>⚡ <strong>Real-time Sync:</strong> API Indodax Live Feed.</li>
+                <li>🎯 <strong>Capital-Based Alert:</strong> TP & SL dihitung dari nilai rupiah riil modal.</li>
+                <li>⚙️ <strong>Custom Fee Deduct:</strong> Hitungan profit bersih otomatis setelah dipotong fee bursa.</li>
+                <li>🔒 <strong>Auto Lock Profit:</strong> Naikkan modal & kunci profit secara instant.</li>
+            </ul>
+            <div class="modal-version">Versi 4.1 Premium | Created by <span>Zenn</span></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://s3.tradingview.com/tv.js"></script>
 <script src="script.js"></script>
-
 </body>
 </html>
