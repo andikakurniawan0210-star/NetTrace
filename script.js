@@ -1,13 +1,13 @@
 const BOT_TOKEN = "8970243347:AAFlLX6uxuMhUmwE_jgM32WptGfbyQF6vjs";
 const CHAT_ID = "6977077624";
 
-// Configuration Map Multi-Asset Kripto (Menggunakan CryptoCompare IDR API)
+// Configuration Map Multi-Asset Kripto (Harga Indodax, Grafik Binance IDR)
 const ASSET_CONFIG = {
-    btc: { symbol: "BTC", label: "Harga Live BTC/IDR", pairApi: "BTC", tvSymbol: "BINANCE:BTCIDR" },
-    eth: { symbol: "ETH", label: "Harga Live ETH/IDR", pairApi: "ETH", tvSymbol: "BINANCE:ETHIDR" },
-    sol: { symbol: "SOL", label: "Harga Live SOL/IDR", pairApi: "SOL", tvSymbol: "BINANCE:SOLIDR" },
-    doge: { symbol: "DOGE", label: "Harga Live DOGE/IDR", pairApi: "DOGE", tvSymbol: "BINANCE:DOGEIDR" },
-    xrp: { symbol: "XRP", label: "Harga Live XRP/IDR", pairApi: "XRP", tvSymbol: "BINANCE:XRPIDR" }
+    btc: { symbol: "BTC", label: "Harga Live BTC/IDR", pairApi: "btc_idr", tvSymbol: "BINANCE:BTCIDR" },
+    eth: { symbol: "ETH", label: "Harga Live ETH/IDR", pairApi: "eth_idr", tvSymbol: "BINANCE:ETHIDR" },
+    sol: { symbol: "SOL", label: "Harga Live SOL/IDR", pairApi: "sol_idr", tvSymbol: "BINANCE:SOLIDR" },
+    doge: { symbol: "DOGE", label: "Harga Live DOGE/IDR", pairApi: "doge_idr", tvSymbol: "BINANCE:DOGEIDR" },
+    xrp: { symbol: "XRP", label: "Harga Live XRP/IDR", pairApi: "xrp_idr", tvSymbol: "BINANCE:XRPIDR" }
 };
 
 let currentAssetKey = 'btc';
@@ -273,11 +273,11 @@ function updateRecommendation(currentModal, tpModal, slModal) {
     }
 }
 
-// API Publik Resmi 100% Bebas Blokir CORS (CryptoCompare API)
-async function getLivePrice(symbol) {
-    const res = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${symbol}&tsyms=IDR`);
+// API Publik Indodax Ticker
+async function getLivePrice(pairApi) {
+    const res = await fetch(`https://indodax.com/api/ticker/${pairApi}`);
     const data = await res.json();
-    return parseFloat(data.IDR);
+    return parseFloat(data.ticker.last);
 }
 
 async function lockProfitAndUpdateModal() {
@@ -476,7 +476,7 @@ async function updateData() {
                 kirimTelegram(pesanSL);
                 isSLSent = true;
             }
-        } else {
+      } else {
             updateRecommendation(0, 0, 0);
             const lockBtn = document.getElementById('lock-profit-btn');
             if (lockBtn) lockBtn.classList.add('hidden');
