@@ -1,13 +1,13 @@
 const BOT_TOKEN = "8970243347:AAFlLX6uxuMhUmwE_jgM32WptGfbyQF6vjs";
 const CHAT_ID = "6977077624";
 
-// Configuration Map Multi-Asset Kripto (TradingView Binance IDR Resmi)
+// Configuration Map Multi-Asset Kripto (API V2)
 const ASSET_CONFIG = {
-    btc: { symbol: "BTC", label: "Harga Live Indodax (BTC)", pairApi: "btc_idr", tvSymbol: "BINANCE:BTCIDR" },
-    eth: { symbol: "ETH", label: "Harga Live Indodax (ETH)", pairApi: "eth_idr", tvSymbol: "BINANCE:ETHIDR" },
-    sol: { symbol: "SOL", label: "Harga Live Indodax (SOL)", pairApi: "sol_idr", tvSymbol: "BINANCE:SOLIDR" },
-    doge: { symbol: "DOGE", label: "Harga Live Indodax (DOGE)", pairApi: "doge_idr", tvSymbol: "BINANCE:DOGEIDR" },
-    xrp: { symbol: "XRP", label: "Harga Live Indodax (XRP)", pairApi: "xrp_idr", tvSymbol: "BINANCE:XRPIDR" }
+    btc: { symbol: "BTC", label: "Harga Live Indodax (BTC)", pairApi: "btcidr", tvSymbol: "BINANCE:BTCIDR" },
+    eth: { symbol: "ETH", label: "Harga Live Indodax (ETH)", pairApi: "ethidr", tvSymbol: "BINANCE:ETHIDR" },
+    sol: { symbol: "SOL", label: "Harga Live Indodax (SOL)", pairApi: "solidr", tvSymbol: "BINANCE:SOLIDR" },
+    doge: { symbol: "DOGE", label: "Harga Live Indodax (DOGE)", pairApi: "dogeidr", tvSymbol: "BINANCE:DOGEIDR" },
+    xrp: { symbol: "XRP", label: "Harga Live Indodax (XRP)", pairApi: "xrpidr", tvSymbol: "BINANCE:XRPIDR" }
 };
 
 let currentAssetKey = 'btc';
@@ -76,7 +76,6 @@ function closeFeeModal() {
     updateData();
 }
 
-// Custom Fee default 0 saat pertama kali masuk
 function getFeePercent() {
     const el = document.getElementById('fee-input');
     if (!el || !el.value) return 0;
@@ -108,7 +107,7 @@ function loadSavedInputs() {
     if (savedFee !== null && document.getElementById('fee-input')) {
         document.getElementById('fee-input').value = savedFee;
     } else if (document.getElementById('fee-input')) {
-        document.getElementById('fee-input').value = ''; // Kosong jika belum pernah diset
+        document.getElementById('fee-input').value = '';
     }
 }
 
@@ -274,17 +273,22 @@ function updateRecommendation(currentModal, tpModal, slModal) {
     }
 }
 
+// Fungsi Fetch Harga Terpercaya (API Indodax V2 + corsproxy.io)
+async function getIndodaxPrice(pairApi) {
+    const targetUrl = `https://indodax.com/api/v2/ticker/${pairApi}`;
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+    
+    const res = await fetch(proxyUrl);
+    const data = await res.json();
+    return parseFloat(data.ticker.last);
+}
+
 async function lockProfitAndUpdateModal() {
     if (!activeTargets.active || currentCalculatedModal <= activeTargets.netModalAwal) return;
 
     try {
         const asset = ASSET_CONFIG[currentAssetKey];
-        const targetUrl = `https://indodax.com/api/ticker/${asset.pairApi}`;
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
-
-        const res = await fetch(proxyUrl);
-        const data = await res.json();
-        const currentPrice = parseFloat(data.ticker.last);
+        const currentPrice = await getIndodaxPrice(asset.pairApi);
 
         const newModal = Math.round(currentCalculatedModal);
         const newSL = activeTargets.netModalAwal; 
@@ -326,15 +330,12 @@ async function startMonitoring() {
         return;
     }
 
-    // 1. Potong Modal Beli Awal Dengan Custom Fee
     const feePercent = getFeePercent() / 100;
     const netModalAwal = Math.round(rawModal - (rawModal * feePercent));
 
-    // Update Teks Input Modal Beli Dengan Modal Bersih
     document.getElementById('modal-input').value = netModalAwal.toLocaleString('id-ID');
     saveInputsToStorage();
 
-    // 2. Peringatan jika Target SL lebih tinggi dari Modal Bersih
     if (slModal >= netModalAwal) {
         const warningMsg = `⚠️ PERINGATAN FEE BURSA!\n\nModal Kotor: Rp ${rawModal.toLocaleString('id-ID')}\nModal Bersih (-${getFeePercent()}% Fee): Rp ${netModalAwal.toLocaleString('id-ID')}\n\nTarget SL kamu (Rp ${slModal.toLocaleString('id-ID')}) LEBIH TINGGI / SAMA DENGAN Modal Bersih!`;
         alert(warningMsg);
@@ -342,13 +343,9 @@ async function startMonitoring() {
 
     try {
         const asset = ASSET_CONFIG[currentAssetKey];
-        const targetUrl = `https://indodax.com/api/ticker/${asset.pairApi}`;
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+        const currentPrice = await getIndodaxPrice(asset.pairApi);
         
-        const res = await fetch(proxyUrl);
-        const data = await res.json();
-        
-        activeTargets.entryPrice = parseFloat(data.ticker.last);
+        activeTargets.entryPrice = currentPrice;
         activeTargets.modal = netModalAwal;
         activeTargets.netModalAwal = netModalAwal;
         activeTargets.tpModal = tpModal;
@@ -433,22 +430,14 @@ function getDurationText() {
 async function updateData() {
     try {
         const asset = ASSET_CONFIG[currentAssetKey];
-        const targetUrl = `https://indodax.com/api/ticker/${asset.pairApi}`;
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
-
-        const res = await fetch(proxyUrl);
-        const data = await res.json();
-        const currentPrice = parseFloat(data.ticker.last);
+        const currentPrice = await getIndodaxPrice(asset.pairApi);
         
         const priceLabel = document.getElementById('current-price');
         if (priceLabel) priceLabel.innerText = "Rp " + currentPrice.toLocaleString('id-ID');
 
         if (activeTargets.active) {
             const rasioPerubahan = currentPrice / activeTargets.entryPrice;
-            
-            // Hitung modal bersih berjalan
             currentCalculatedModal = activeTargets.netModalAwal * rasioPerubahan;
-
             const persenPerubahan = ((currentCalculatedModal - activeTargets.modal) / activeTargets.modal) * 100;
 
             const el = document.getElementById('portfolio-value');
@@ -473,13 +462,12 @@ async function updateData() {
             const nowStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             const durasi = getDurationText();
 
-            // Pemicu Notifikasi & Alarm Suara
             if (currentCalculatedModal >= activeTargets.tpModal && !isTPSent) {
                 playAlarmSound('TP');
                 triggerAppAlert('TP', 'TARGET PROFIT TERCAPAI! 🚀', `Saldo berkembang ke Rp ${modalFormatted}. Rekomendasi: SELL SEKARANG!`);
                 
                 const pesanTP = `TARGET PROFIT MODAL TERCAPAI 🟢 (${asset.symbol})\n──────────────\nModal Awal: Rp ${activeTargets.modal.toLocaleString('id-ID')}\nTarget TP: Rp ${activeTargets.tpModal.toLocaleString('id-ID')}\nSaldo Bersih: Rp ${modalFormatted}\n──────────────\nHarga ${asset.symbol}: Rp ${currentPrice.toLocaleString('id-ID')}\nWaktu: ${nowStr} WIB\nDurasi: ${durasi}\n\n💡 Rekomendasi: Lakukan SELL SEKARANG!`;
-        kirimTelegram(pesanTP);
+                kirimTelegram(pesanTP);
                 isTPSent = true;
             }
 
@@ -496,7 +484,7 @@ async function updateData() {
             const lockBtn = document.getElementById('lock-profit-btn');
             if (lockBtn) lockBtn.classList.add('hidden');
         }
-    } catch (e) { console.error("Update data gagal"); }
+    } catch (e) { console.error("Update data gagal", e); }
 }
 
 async function kirimTelegram(pesan) {
