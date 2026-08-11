@@ -279,7 +279,10 @@ async function lockProfitAndUpdateModal() {
 
     try {
         const asset = ASSET_CONFIG[currentAssetKey];
-        const res = await fetch(`https://indodax.com/api/ticker/${asset.pairApi}`);
+        const targetUrl = `https://indodax.com/api/ticker/${asset.pairApi}`;
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+
+        const res = await fetch(proxyUrl);
         const data = await res.json();
         const currentPrice = parseFloat(data.ticker.last);
 
@@ -339,7 +342,10 @@ async function startMonitoring() {
 
     try {
         const asset = ASSET_CONFIG[currentAssetKey];
-        const res = await fetch(`https://indodax.com/api/ticker/${asset.pairApi}`);
+        const targetUrl = `https://indodax.com/api/ticker/${asset.pairApi}`;
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+        
+        const res = await fetch(proxyUrl);
         const data = await res.json();
         
         activeTargets.entryPrice = parseFloat(data.ticker.last);
@@ -427,7 +433,10 @@ function getDurationText() {
 async function updateData() {
     try {
         const asset = ASSET_CONFIG[currentAssetKey];
-        const res = await fetch(`https://indodax.com/api/ticker/${asset.pairApi}`);
+        const targetUrl = `https://indodax.com/api/ticker/${asset.pairApi}`;
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+
+        const res = await fetch(proxyUrl);
         const data = await res.json();
         const currentPrice = parseFloat(data.ticker.last);
         
@@ -470,7 +479,7 @@ async function updateData() {
                 triggerAppAlert('TP', 'TARGET PROFIT TERCAPAI! 🚀', `Saldo berkembang ke Rp ${modalFormatted}. Rekomendasi: SELL SEKARANG!`);
                 
                 const pesanTP = `TARGET PROFIT MODAL TERCAPAI 🟢 (${asset.symbol})\n──────────────\nModal Awal: Rp ${activeTargets.modal.toLocaleString('id-ID')}\nTarget TP: Rp ${activeTargets.tpModal.toLocaleString('id-ID')}\nSaldo Bersih: Rp ${modalFormatted}\n──────────────\nHarga ${asset.symbol}: Rp ${currentPrice.toLocaleString('id-ID')}\nWaktu: ${nowStr} WIB\nDurasi: ${durasi}\n\n💡 Rekomendasi: Lakukan SELL SEKARANG!`;
-                kirimTelegram(pesanTP);
+        kirimTelegram(pesanTP);
                 isTPSent = true;
             }
 
