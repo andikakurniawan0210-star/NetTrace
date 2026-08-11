@@ -1,13 +1,13 @@
 const BOT_TOKEN = "8970243347:AAFlLX6uxuMhUmwE_jgM32WptGfbyQF6vjs";
 const CHAT_ID = "6977077624";
 
-// Configuration Map Multi-Asset Kripto (API V2)
+// Configuration Map Multi-Asset Kripto (Menggunakan Pair Binance IDR yang Bebas CORS)
 const ASSET_CONFIG = {
-    btc: { symbol: "BTC", label: "Harga Live Indodax (BTC)", pairApi: "btcidr", tvSymbol: "BINANCE:BTCIDR" },
-    eth: { symbol: "ETH", label: "Harga Live Indodax (ETH)", pairApi: "ethidr", tvSymbol: "BINANCE:ETHIDR" },
-    sol: { symbol: "SOL", label: "Harga Live Indodax (SOL)", pairApi: "solidr", tvSymbol: "BINANCE:SOLIDR" },
-    doge: { symbol: "DOGE", label: "Harga Live Indodax (DOGE)", pairApi: "dogeidr", tvSymbol: "BINANCE:DOGEIDR" },
-    xrp: { symbol: "XRP", label: "Harga Live Indodax (XRP)", pairApi: "xrpidr", tvSymbol: "BINANCE:XRPIDR" }
+    btc: { symbol: "BTC", label: "Harga Live BTC/IDR", pairApi: "BTCIDR", tvSymbol: "BINANCE:BTCIDR" },
+    eth: { symbol: "ETH", label: "Harga Live ETH/IDR", pairApi: "ETHIDR", tvSymbol: "BINANCE:ETHIDR" },
+    sol: { symbol: "SOL", label: "Harga Live SOL/IDR", pairApi: "SOLIDR", tvSymbol: "BINANCE:SOLIDR" },
+    doge: { symbol: "DOGE", label: "Harga Live DOGE/IDR", pairApi: "DOGEIDR", tvSymbol: "BINANCE:DOGEIDR" },
+    xrp: { symbol: "XRP", label: "Harga Live XRP/IDR", pairApi: "XRPIDR", tvSymbol: "BINANCE:XRPIDR" }
 };
 
 let currentAssetKey = 'btc';
@@ -273,14 +273,11 @@ function updateRecommendation(currentModal, tpModal, slModal) {
     }
 }
 
-// Fungsi Fetch Harga Terpercaya (API Indodax V2 + corsproxy.io)
-async function getIndodaxPrice(pairApi) {
-    const targetUrl = `https://indodax.com/api/v2/ticker/${pairApi}`;
-    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
-    
-    const res = await fetch(proxyUrl);
+// Fungsi Fetch Harga Bebas CORS (API Binance Direct)
+async function getLivePrice(pairSymbol) {
+    const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${pairSymbol}`);
     const data = await res.json();
-    return parseFloat(data.ticker.last);
+    return parseFloat(data.price);
 }
 
 async function lockProfitAndUpdateModal() {
@@ -288,7 +285,7 @@ async function lockProfitAndUpdateModal() {
 
     try {
         const asset = ASSET_CONFIG[currentAssetKey];
-        const currentPrice = await getIndodaxPrice(asset.pairApi);
+        const currentPrice = await getLivePrice(asset.pairApi);
 
         const newModal = Math.round(currentCalculatedModal);
         const newSL = activeTargets.netModalAwal; 
@@ -343,7 +340,7 @@ async function startMonitoring() {
 
     try {
         const asset = ASSET_CONFIG[currentAssetKey];
-        const currentPrice = await getIndodaxPrice(asset.pairApi);
+        const currentPrice = await getLivePrice(asset.pairApi);
         
         activeTargets.entryPrice = currentPrice;
         activeTargets.modal = netModalAwal;
@@ -372,7 +369,7 @@ async function startMonitoring() {
 
         updateData();
 
-    } catch(e) { alert("Gagal terhubung ke API Indodax. Coba lagi."); }
+    } catch(e) { alert("Gagal terhubung ke API Harga. Coba lagi."); }
 }
 
 function stopMonitoring() {
@@ -430,7 +427,7 @@ function getDurationText() {
 async function updateData() {
     try {
         const asset = ASSET_CONFIG[currentAssetKey];
-        const currentPrice = await getIndodaxPrice(asset.pairApi);
+        const currentPrice = await getLivePrice(asset.pairApi);
         
         const priceLabel = document.getElementById('current-price');
         if (priceLabel) priceLabel.innerText = "Rp " + currentPrice.toLocaleString('id-ID');
