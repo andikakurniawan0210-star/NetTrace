@@ -1,13 +1,13 @@
 const BOT_TOKEN = "8970243347:AAFlLX6uxuMhUmwE_jgM32WptGfbyQF6vjs";
 const CHAT_ID = "6977077624";
 
-// Configuration Map Multi-Asset Kripto (Menggunakan Pair Binance IDR yang Bebas CORS)
+// Configuration Map Multi-Asset Kripto (Menggunakan CryptoCompare IDR API)
 const ASSET_CONFIG = {
-    btc: { symbol: "BTC", label: "Harga Live BTC/IDR", pairApi: "BTCIDR", tvSymbol: "BINANCE:BTCIDR" },
-    eth: { symbol: "ETH", label: "Harga Live ETH/IDR", pairApi: "ETHIDR", tvSymbol: "BINANCE:ETHIDR" },
-    sol: { symbol: "SOL", label: "Harga Live SOL/IDR", pairApi: "SOLIDR", tvSymbol: "BINANCE:SOLIDR" },
-    doge: { symbol: "DOGE", label: "Harga Live DOGE/IDR", pairApi: "DOGEIDR", tvSymbol: "BINANCE:DOGEIDR" },
-    xrp: { symbol: "XRP", label: "Harga Live XRP/IDR", pairApi: "XRPIDR", tvSymbol: "BINANCE:XRPIDR" }
+    btc: { symbol: "BTC", label: "Harga Live BTC/IDR", pairApi: "BTC", tvSymbol: "BINANCE:BTCIDR" },
+    eth: { symbol: "ETH", label: "Harga Live ETH/IDR", pairApi: "ETH", tvSymbol: "BINANCE:ETHIDR" },
+    sol: { symbol: "SOL", label: "Harga Live SOL/IDR", pairApi: "SOL", tvSymbol: "BINANCE:SOLIDR" },
+    doge: { symbol: "DOGE", label: "Harga Live DOGE/IDR", pairApi: "DOGE", tvSymbol: "BINANCE:DOGEIDR" },
+    xrp: { symbol: "XRP", label: "Harga Live XRP/IDR", pairApi: "XRP", tvSymbol: "BINANCE:XRPIDR" }
 };
 
 let currentAssetKey = 'btc';
@@ -273,11 +273,11 @@ function updateRecommendation(currentModal, tpModal, slModal) {
     }
 }
 
-// Fungsi Fetch Harga Bebas CORS (API Binance Direct)
-async function getLivePrice(pairSymbol) {
-    const res = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${pairSymbol}`);
+// API Publik Resmi 100% Bebas Blokir CORS (CryptoCompare API)
+async function getLivePrice(symbol) {
+    const res = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${symbol}&tsyms=IDR`);
     const data = await res.json();
-    return parseFloat(data.price);
+    return parseFloat(data.IDR);
 }
 
 async function lockProfitAndUpdateModal() {
