@@ -4,232 +4,290 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>NetTrace | Premium Terminal</title>
+    
+    <!-- IKON APLIKASI (EMBEDDED DATA URL SVG) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='110' fill='%230d1117'/><g transform='translate(64, 64) scale(16)' fill='none' stroke='%2300f2fe' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M22 12h-4l-3 9L9 3l-3 9H2'/><circle cx='12' cy='12' r='2' fill='%2300f2fe'/></g></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='110' fill='%230d1117'/><g transform='translate(64, 64) scale(16)' fill='none' stroke='%2300f2fe' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M22 12h-4l-3 9L9 3l-3 9H2'/><circle cx='12' cy='12' r='2' fill='%2300f2fe'/></g></svg>">
+
+    <!-- Google Fonts & Font Awesome Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- Loading Screen -->
-<div id="loader-wrapper">
-    <div class="loader-content">
-        <div class="loader-logo">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="url(#logo-grad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <defs>
-                    <linearGradient id="logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#00f2fe" />
-                        <stop offset="100%" stop-color="#4facfe" />
-                    </linearGradient>
-                </defs>
-                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
-                <polyline points="16 7 22 7 22 13"></polyline>
-            </svg>
-            <span>NetTrace</span>
-        </div>
-        <div class="progress-container">
-            <div class="progress-bar" id="progress-bar"></div>
-        </div>
-        <p class="loader-text"><span id="progress-text">1%</span></p>
-    </div>
-</div>
-
-<!-- Modal Disclaimer Pengguna Pertama -->
-<div id="disclaimer-modal" class="modal-wrapper">
-    <div class="modal-content disclaimer-content">
-        <div class="modal-header">
-            <h3>⚠️ DISCLAIMER PENTING</h3>
-        </div>
-        <div class="modal-body">
-            <ul class="disclaimer-list">
-                <li>📌 <strong>Bukan Penasihat Keuangan:</strong> NetTrace Pro hanyalah alat bantu monitoring dan kalkulator mandiri.</li>
-                <li>⚠️ <strong>Risiko Mandiri:</strong> Segala keputusan trading, profit, maupun kerugian (loss) adalah tanggung jawab penuh kamu sendiri.</li>
-                <li>🛡️ <strong>Bukan Jaminan:</strong> Developer tidak bertanggung jawab atas gangguan jaringan atau fluktuasi harga pasar.</li>
-            </ul>
-            <p class="disclaimer-note">Dengan melanjutkan, kamu dianggap sudah mengerti dan setuju.</p>
-            <button class="btn-main btn-agree" onclick="acceptDisclaimer()">Saya Mengerti & Setuju</button>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Custom Fee -->
-<div id="fee-modal" class="modal-wrapper">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>⚙️ Pengaturan Fee Exchange</h3>
-            <span class="close-btn" onclick="closeFeeModal()">&times;</span>
-        </div>
-        <div class="modal-body">
-            <p>Masukkan persentase biaya transaksi (fee) bursa kamu (misal: 0.21 untuk Indodax, 0.1 untuk Binance). Isikan 0 jika tidak ingin menghitung fee.</p>
-            <div class="input-group">
-                <label for="fee-input">Fee Transaksi Total (%)</label>
-                <input type="text" id="fee-input" placeholder="Contoh: 0.21" value="" oninput="saveInputsToStorage()">
+    <!-- ============================================================
+         LOADING SCREEN
+         ============================================================ -->
+    <div id="loader-wrapper">
+        <div class="loader-content">
+            <div class="loader-logo">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                    <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                </svg>
+                <span>NetTrace</span>
             </div>
-            <br>
-            <button class="btn-main" onclick="closeFeeModal()">Simpan & Terapkan</button>
-        </div>
-    </div>
-</div>
-
-<!-- Banner Alert In-App -->
-<div id="app-alert" class="app-alert">
-    <div class="alert-icon" id="alert-icon">🔔</div>
-    <div class="alert-content">
-        <div class="alert-title" id="alert-title">Target Reached</div>
-        <div class="alert-desc" id="alert-desc">Keterangan target trading...</div>
-    </div>
-    <button class="alert-close" onclick="closeAppAlert()">&times;</button>
-</div>
-
-<div class="app-container">
-    <!-- Header App -->
-    <header class="top-nav">
-        <div class="brand-title">
-            <div class="brand-logo-icon">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
             </div>
-            <span class="brand-text">NET<span class="brand-sub">TRACE</span></span> 
-            <span class="pro-tag">PRO</span>
-        </div>
-        <div class="header-right">
-            <!-- Dropdown Selector Aset Multi-Koin -->
-            <div class="asset-dropdown-wrapper">
-                <div class="pulse-dot"></div>
-                <select id="asset-select" class="asset-select" onchange="changeAsset(this.value)">
-                    <option value="btc">BTC/IDR</option>
-                    <option value="eth">ETH/IDR</option>
-                    <option value="sol">SOL/IDR</option>
-                    <option value="doge">DOGE/IDR</option>
-                    <option value="xrp">XRP/IDR</option>
-                </select>
-            </div>
+            <div class="loader-text" id="loader-text">Memuat Sistem... <span id="progress-text">0%</span></div>
             
-            <div class="notif-wrapper">
-                <button class="icon-btn notif-btn" onclick="toggleNotifPop()" title="Notifikasi Sistem">
-                    🔔
-                    <span id="notif-dot" class="notif-dot hidden"></span>
-                </button>
-                <div id="notif-pop" class="notif-pop">
-                    <div class="notif-pop-header">Status Notifikasi</div>
-                    <div class="notif-pop-body" id="notif-pop-body">Belum ada notifikasi aktif.</div>
-                </div>
+            <!-- WATERMARK LOADING -->
+            <div style="font-size: 11px; opacity: 0.6; margin-top: 15px; letter-spacing: 0.5px;">
+                Designed & Developed by <span style="color: #00f2fe; font-weight: 600;">Zenn</span>
             </div>
-        </div>
-    </header>
-
-    <!-- Ticker & Live Portfolio Banner -->
-    <section class="card ticker-card">
-        <div class="ticker-item">
-            <span class="label" id="live-price-label">Harga Live Indodax (BTC)</span>
-            <span class="price-text" id="current-price">Rp --</span>
-        </div>
-        <div class="ticker-item text-right">
-            <span class="label">Estimasi Modal</span>
-            <div class="pl-badge" id="portfolio-value">Rp 0,00 (0.00%)</div>
-        </div>
-    </section>
-
-    <!-- Chart Container -->
-    <section class="card chart-card">
-        <div id="tradingview_chart" style="height:100%; width:100%;"></div>
-    </section>
-
-    <!-- Rekomendasi Aksi Card -->
-    <section class="card recom-card">
-        <div class="recom-header">
-            <span class="label">Rekomendasi Aksi Real-Time</span>
-            <div id="recom-badge" class="recom-badge standby">STANDBY</div>
-        </div>
-        <div class="recom-desc" id="recom-desc">
-            Sistem siap. Masukkan modal & target lalu klik Mulai Monitoring.
-        </div>
-    </section>
-
-    <!-- Parameter Config Form -->
-    <section class="card config-card">
-        <div class="card-title">
-            <span>PARAMETER TRADING</span>
-            <div class="glow-line"></div>
-        </div>
-
-        <div class="form-grid">
-            <div class="input-group">
-                <label for="modal-input">Modal Beli (Rp)</label>
-                <div class="input-wrapper">
-                    <input type="text" id="modal-input" placeholder="Contoh: 100.000" oninput="formatRupiahInput(this)">
-                </div>
-            </div>
-
-            <div class="input-group">
-                <label for="tp-price">Target TP (Rp)</label>
-                <div class="input-wrapper">
-                    <input type="text" id="tp-price" placeholder="Contoh: 105.000" oninput="formatRupiahInput(this)">
-                    <div class="quick-btn-overlay">
-                        <button type="button" class="quick-btn tp-quick" onclick="setQuickPercent('TP', 3)">+3%</button>
-                        <button type="button" class="quick-btn tp-quick" onclick="setQuickPercent('TP', 5)">+5%</button>
-                        <button type="button" class="quick-btn tp-quick" onclick="setQuickPercent('TP', 10)">+10%</button>
-                        <button type="button" class="quick-btn tp-quick" onclick="setQuickPercent('TP', 20)">+20%</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="input-group">
-                <label for="sl-price">Target SL (Rp)</label>
-                <div class="input-wrapper">
-                    <input type="text" id="sl-price" placeholder="Contoh: 95.000" oninput="formatRupiahInput(this)">
-                    <div class="quick-btn-overlay">
-                        <button type="button" class="quick-btn sl-quick" onclick="setQuickPercent('SL', 3)">-3%</button>
-                        <button type="button" class="quick-btn sl-quick" onclick="setQuickPercent('SL', 5)">-5%</button>
-                        <button type="button" class="quick-btn sl-quick" onclick="setQuickPercent('SL', 10)">-10%</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tombol Lock Profit -->
-        <button id="lock-profit-btn" class="btn-lock-profit hidden" onclick="lockProfitAndUpdateModal()">
-            🔒 LOCK PROFIT / UPDATE MODAL
-        </button>
-
-        <!-- Buttons -->
-        <div class="button-group">
-            <button id="start-btn" class="btn-main" onclick="startMonitoring()">
-                <span>MULAI MONITORING</span>
-            </button>
-            <button class="btn-fee" onclick="openFeeModal()" title="Pengaturan Custom Fee">⚙️ Fee</button>
-            <button id="reset-btn" class="btn-reset" onclick="stopMonitoring()">RESET</button>
-        </div>
-
-        <div class="status-footer-row">
-            <div class="status-bar" id="status-text">Status: Siap monitoring.</div>
-            <button class="info-btn" onclick="openInfoModal()" title="Informasi Aplikasi">i</button>
-        </div>
-    </section>
-
-    <footer class="footer">
-        Created by <span>Zenn</span>
-    </footer>
-</div>
-
-<!-- Modal Informasi -->
-<div id="info-modal" class="modal-wrapper">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Tentang NetTrace Pro</h3>
-            <span class="close-btn" onclick="closeInfoModal()">&times;</span>
-        </div>
-        <div class="modal-body">
-            <p><strong>NetTrace</strong> adalah terminal pemantau real-time pergerakan nilai modal trading crypto berbasis notifikasi otomatis via Telegram, In-App Alert, dan Alarm Suara.</p>
-            <ul>
-                <li>⚡ <strong>Real-time Sync:</strong> API Indodax Live Feed.</li>
-                <li>🎯 <strong>Capital-Based Alert:</strong> TP & SL dihitung dari nilai rupiah riil modal.</li>
-                <li>⚙️ <strong>Custom Fee Deduct:</strong> Hitungan profit bersih otomatis setelah dipotong fee bursa.</li>
-                <li>🔒 <strong>Auto Lock Profit:</strong> Naikkan modal & kunci profit secara instant.</li>
-            </ul>
-            <div class="modal-version">Versi 4.1 Premium | Created by <span>Zenn</span></div>
         </div>
     </div>
-</div>
 
-<script src="https://s3.tradingview.com/tv.js"></script>
-<script src="script.js"></script>
+    <!-- ============================================================
+         MAIN APP CONTAINER
+         ============================================================ -->
+    <div class="app-container">
+
+        <!-- HEADER & TOP NAV -->
+        <header class="top-nav">
+            <div class="brand-title">
+                <span class="brand-logo-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                        <circle cx="12" cy="12" r="2" fill="currentColor"/>
+                    </svg>
+                </span>
+                <span class="brand-text">NET<span class="brand-sub">TRACE</span></span>
+                <span class="pro-tag">PRO</span>
+            </div>
+
+            <div class="header-right">
+                <!-- Dropdown Aset Koin -->
+                <div class="asset-dropdown-wrapper">
+                    <span class="pulse-dot"></span>
+                    <select id="asset-select" class="asset-select" onchange="changeAsset(this.value)">
+                        <option value="btc" selected>BTC/IDR</option>
+                        <option value="eth">ETH/IDR</option>
+                        <option value="sol">SOL/IDR</option>
+                        <option value="doge">DOGE/IDR</option>
+                        <option value="xrp">XRP/IDR</option>
+                    </select>
+                </div>
+
+                <!-- Tombol Pengaturan Telegram / Bot -->
+                <button class="icon-btn" id="btnSettings" title="Pengaturan Bot Telegram" onclick="openSettingsModal()">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+
+                <!-- Tombol Notifikasi Popover -->
+                <div class="notif-wrapper">
+                    <button class="icon-btn" id="btnNotif" title="Notifikasi Riwayat" onclick="toggleNotifPop()">
+                        <i class="fa-solid fa-bell"></i>
+                        <span class="notif-dot hidden" id="notif-dot"></span>
+                    </button>
+                    <div class="notif-pop" id="notif-pop">
+                        <div class="notif-pop-header">RIWAYAT SISTEM</div>
+                        <div class="notif-pop-body" id="notif-pop-body">Belum ada aktivitas monitoring.</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- TICKER & ESTIMASI MODAL RIIL -->
+        <section class="card ticker-card">
+            <div class="ticker-item">
+                <span class="label" id="live-price-label">HARGA LIVE BITCOIN (IDR)</span>
+                <div class="price-text" id="current-price">Rp 0</div>
+            </div>
+            <div class="ticker-item text-right">
+                <span class="label">ESTIMASI MODAL</span>
+                <div class="pl-badge" id="portfolio-value">Rp 0 (0.00%)</div>
+            </div>
+        </section>
+
+        <!-- TRADINGVIEW CHART CONTAINER -->
+        <section class="card chart-card">
+            <div id="tradingview_chart" style="height: 100%; width: 100%;"></div>
+        </section>
+
+        <!-- REKOMENDASI AKSI REAL-TIME -->
+        <section class="card recom-card">
+            <div class="recom-header">
+                <span class="label">REKOMENDASI AKSI REAL-TIME</span>
+                <span class="recom-badge standby" id="recom-badge">STANDBY</span>
+            </div>
+            <div class="recom-desc" id="recom-desc">Sistem siap. Masukkan modal & target lalu klik Mulai Monitor.</div>
+        </section>
+
+        <!-- PARAMETER TRADING FORM -->
+        <section class="card config-card">
+            <div class="card-title">
+                <span>PARAMETER TRADING</span>
+                <div class="glow-line"></div>
+            </div>
+
+            <form id="tradingForm" class="form-grid" onsubmit="return false;">
+                <!-- Input Modal Beli -->
+                <div class="input-group">
+                    <label for="modal-input">Modal Beli (Rp)</label>
+                    <input type="text" id="modal-input" placeholder="Masukkan Modal Beli..." inputmode="numeric" oninput="formatRupiahInput(this)">
+                </div>
+
+                <!-- Input Target TP -->
+                <div class="input-group">
+                    <label for="tp-price">Target TP (Rp)</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="tp-price" placeholder="Masukkan Target TP..." inputmode="numeric" oninput="formatRupiahInput(this)">
+                        <div class="quick-btn-overlay">
+                            <button type="button" class="quick-btn" onclick="setQuickPercent('TP', 3)">+3%</button>
+                            <button type="button" class="quick-btn" onclick="setQuickPercent('TP', 5)">+5%</button>
+                            <button type="button" class="quick-btn" onclick="setQuickPercent('TP', 10)">+10%</button>
+                            <button type="button" class="quick-btn" onclick="setQuickPercent('TP', 20)">+20%</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input Target SL -->
+                <div class="input-group">
+                    <label for="sl-price">Target SL (Rp)</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="sl-price" placeholder="Masukkan Target SL..." inputmode="numeric" oninput="formatRupiahInput(this)">
+                        <div class="quick-btn-overlay">
+                            <button type="button" class="quick-btn" onclick="setQuickPercent('SL', 3)">-3%</button>
+                            <button type="button" class="quick-btn" onclick="setQuickPercent('SL', 5)">-5%</button>
+                            <button type="button" class="quick-btn" onclick="setQuickPercent('SL', 10)">-10%</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Auto Lock Profit Button -->
+                <button type="button" class="btn-lock-profit hidden" id="lock-profit-btn" onclick="lockProfitAndUpdateModal()">
+                    <i class="fa-solid fa-lock"></i> LOCK PROFIT SAAT INI
+                </button>
+
+                <!-- Action Buttons -->
+                <div class="button-group">
+                    <button type="button" class="btn-main" id="start-btn">MULAI MONITORING</button>
+                    <button type="button" class="btn-fee" id="btnFeeSettings" onclick="openFeeModal()">Fee</button>
+                    <button type="button" class="btn-reset" id="btnReset" onclick="stopMonitoring()">RESET</button>
+                </div>
+            </form>
+
+            <div class="status-footer-row">
+                <div class="status-bar" id="status-text">Status: Siap monitoring.</div>
+                <button class="info-btn" id="btnAbout" title="Tentang Aplikasi" onclick="openInfoModal()">i</button>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+            Designed & Developed by <span>Zenn</span>
+        </footer>
+
+    </div>
+
+    <!-- ============================================================
+         MODAL LOGIN & PROTEKSI USERNAME
+         ============================================================ -->
+    <div class="modal-wrapper" id="login-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>LOGIN AKUN NETTRACE</h3>
+            </div>
+            <div class="modal-body">
+                <div class="input-group" style="margin-bottom: 12px;">
+                    <label for="auth-username">Username</label>
+                    <input type="text" id="auth-username" placeholder="Masukkan username Anda...">
+                </div>
+                <div class="input-group" style="margin-bottom: 12px;">
+                    <label for="auth-password">Password</label>
+                    <input type="password" id="auth-password" placeholder="Masukkan password...">
+                </div>
+                <div id="auth-error-msg" style="color: #ff1744; font-size: 12px; display: none; margin-bottom: 10px;"></div>
+                <button class="btn-main" style="width: 100%;" onclick="handleAuth()">MASUK / DAFTAR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL PENGATURAN TELEGRAM / BOT
+         ============================================================ -->
+    <div class="modal-wrapper" id="settings-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>PENGATURAN BOT TELEGRAM</h3>
+                <span class="close-btn" onclick="closeSettingsModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="input-group" style="margin-bottom: 12px;">
+                    <label for="bot-token-input">Bot Token Telegram</label>
+                    <input type="text" id="bot-token-input" placeholder="Contoh: 123456:ABC-DEF1234...">
+                </div>
+                <div class="input-group" style="margin-bottom: 12px;">
+                    <label for="chat-id-input">Chat ID Telegram</label>
+                    <input type="text" id="chat-id-input" placeholder="Contoh: 987654321">
+                </div>
+                <button class="btn-main" style="width: 100%; margin-bottom: 8px;" onclick="closeSettingsModal()">SIMPAN KONFIGURASI</button>
+                <button class="btn-reset" style="width: 100%; border-color: #ff1744; color: #ff1744;" onclick="logoutUser()">LOGOUT</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL PENGATURAN FEE TRADING
+         ============================================================ -->
+    <div class="modal-wrapper" id="fee-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>SETTING FEE TRADING</h3>
+                <span class="close-btn" onclick="closeFeeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="input-group" style="margin-bottom: 12px;">
+                    <label for="fee-input">Fee Beli (%)</label>
+                    <input type="number" id="fee-input" step="0.01" value="0.51">
+                </div>
+                <button class="btn-main" style="width: 100%;" onclick="closeFeeModal()">SIMPAN FEE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL ABOUT / TENTANG NETTRACE
+         ============================================================ -->
+    <div class="modal-wrapper" id="info-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>TENTANG NETTRACE PRO</h3>
+                <span class="close-btn" onclick="closeInfoModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p><strong>NetTrace Pro</strong> adalah terminal pemantau harga crypto secara real-time yang menghitung estimasi modal bersih setelah dikurangi potongan fee taker/maker Indodax.</p>
+                <ul>
+                    <li>Hitung Modal Riil otomatis</li>
+                    <li>Sinyal TP/SL Instan</li>
+                    <li>Integrasi Bot Telegram Auto Alert</li>
+                    <li>Sistem Lock Profit cepat</li>
+                </ul>
+                <div class="modal-version">Versi 2.0.0 — Dark Mode Edition</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         IN-APP POPUP BANNER NOTIFICATION
+         ============================================================ -->
+    <div class="app-alert" id="app-alert">
+        <div class="alert-icon" id="alert-icon">⚠️</div>
+        <div class="alert-content">
+            <div class="alert-title" id="alert-title">NOTIFIKASI TARGET</div>
+            <div class="alert-desc" id="alert-desc">Target telah tercapai!</div>
+        </div>
+        <button class="alert-close" onclick="closeAppAlert()">&times;</button>
+    </div>
+
+    <!-- TradingView Widget Script & Main Script -->
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
