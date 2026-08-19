@@ -1,7 +1,7 @@
 // ============================================================
 // CONFIG & STATE MANAGEMENT
 // ============================================================
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzUiul4OrYMnDOgi_sw6xEvaduit-NyZDwbSwjrTzjhCJkKlKDMJnI6wFq_1rsWSH2h";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzHlXZ2VU3GHGqcDam9ls19UeyfyLvxuQRTkizCqOqU6Di8lgb2jZKA8B_fgoe-cQJq/exec";
 
 const ASSET_CONFIG = {
     btc: { symbol: "BTC", label: "HARGA LIVE BITCOIN (IDR)", geckoId: "bitcoin", tvSymbol: "BINANCE:BTCIDR", indodaxPair: "btc_idr" },
