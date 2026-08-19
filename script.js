@@ -1,12 +1,14 @@
 // ============================================================
 // CONFIG & STATE MANAGEMENT
 // ============================================================
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzUiul4OrYMnDOgi_sw6xEvaduit-NyZDwbSwjrTzjhCJkKlKDMJnI6wFq_1rsWSH2h";
+
 const ASSET_CONFIG = {
-    btc: { symbol: "BTC", label: "HARGA LIVE BITCOIN (IDR)", geckoId: "bitcoin", tvSymbol: "BINANCE:BTCIDR" },
-    eth: { symbol: "ETH", label: "HARGA LIVE ETHEREUM (IDR)", geckoId: "ethereum", tvSymbol: "BINANCE:ETHIDR" },
-    sol: { symbol: "SOL", label: "HARGA LIVE SOLANA (IDR)", geckoId: "solana", tvSymbol: "BINANCE:SOLIDR" },
-    doge: { symbol: "DOGE", label: "HARGA LIVE DOGECOIN (IDR)", geckoId: "dogecoin", tvSymbol: "BINANCE:DOGEIDR" },
-    xrp: { symbol: "XRP", label: "HARGA LIVE XRP (IDR)", geckoId: "ripple", tvSymbol: "BINANCE:XRPIDR" }
+    btc: { symbol: "BTC", label: "HARGA LIVE BITCOIN (IDR)", geckoId: "bitcoin", tvSymbol: "BINANCE:BTCIDR", indodaxPair: "btc_idr" },
+    eth: { symbol: "ETH", label: "HARGA LIVE ETHEREUM (IDR)", geckoId: "ethereum", tvSymbol: "BINANCE:ETHIDR", indodaxPair: "eth_idr" },
+    sol: { symbol: "SOL", label: "HARGA LIVE SOLANA (IDR)", geckoId: "solana", tvSymbol: "BINANCE:SOLIDR", indodaxPair: "sol_idr" },
+    doge: { symbol: "DOGE", label: "HARGA LIVE DOGECOIN (IDR)", geckoId: "dogecoin", tvSymbol: "BINANCE:DOGEIDR", indodaxPair: "doge_idr" },
+    xrp: { symbol: "XRP", label: "HARGA LIVE XRP (IDR)", geckoId: "ripple", tvSymbol: "BINANCE:XRPIDR", indodaxPair: "xrp_idr" }
 };
 
 let currentAssetKey = 'btc';
@@ -175,6 +177,33 @@ async function sendTelegramMessage(message) {
     } catch (e) { console.error("Gagal notifikasi Telegram:", e); }
 }
 
+// FUNGSI INTEGRASI SERVER GOOGLE APPS SCRIPT (24/7)
+function sendDataToGoogleServer(pairAsset, tpPrice, slPrice) {
+    if (!GOOGLE_SCRIPT_URL) return;
+    const { token, chatId } = getTelegramConfig();
+
+    fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            pair: pairAsset,
+            tp: tpPrice,
+            sl: slPrice,
+            token: token,
+            chatId: chatId
+        })
+    })
+    .then(() => {
+        console.log("Data & Kredensial Telegram sukses tersinkronisasi ke Server Google 24/7.");
+    })
+    .catch(err => {
+        console.error("Gagal sinkronisasi ke Server Google:", err);
+    });
+}
+
 // Format Input Rupiah & Local Storage
 function formatRupiahInput(input) {
     if (!input) return;
@@ -196,7 +225,6 @@ function saveInputsToStorage() {
     
     saveTelegramConfig();
 }
-
 // ============================================================
 // DATA LOADING, ALERTS & MONITORING LOGIC
 // ============================================================
@@ -398,11 +426,16 @@ async function startMonitoring() {
         isTPSent = false;
         isSLSent = false;
         
+        // Simpan status monitoring ke memori browser
+        localStorage.setItem('nettrace_is_monitoring', 'true');
+        localStorage.setItem('nettrace_entry_price', currentPrice);
+        localStorage.setItem('nettrace_asset_key', currentAssetKey);
+
         toggleTradingUI(true);
 
         const statusText = document.getElementById('status-text');
         if (statusText) {
-            statusText.innerText = `Status: Monitoring ${asset.symbol} Aktif 🔥`;
+            statusText.innerText = `Status: Monitoring Server 24/7 Aktif 🔥`;
             statusText.style.color = "#00f2fe";
         }
         
@@ -416,6 +449,9 @@ async function startMonitoring() {
         const startMsg = `🚀 <b>MONITORING AKTIF!</b>\n\nAset: <b>${asset.symbol}/IDR</b>\nHarga Entry: <b>Rp ${currentPrice.toLocaleString('id-ID')}</b>\nModal Beli: <b>Rp ${netModalAwal.toLocaleString('id-ID')}</b>\nTarget TP: <b>Rp ${tpModal.toLocaleString('id-ID')}</b>\nTarget SL: <b>Rp ${slModal.toLocaleString('id-ID')}</b>`;
         sendTelegramMessage(startMsg);
 
+        // KIRIM DATA KE SERVER GOOGLE
+        sendDataToGoogleServer(asset.indodaxPair, tpModal, slModal);
+
         updateData();
     } catch(e) { alert("Gagal terhubung ke API Harga."); }
 }
@@ -425,6 +461,11 @@ function stopMonitoring() {
     currentCalculatedModal = 0;
     isTPSent = false;
     isSLSent = false;
+
+    // Hapus status monitoring di memori browser
+    localStorage.removeItem('nettrace_is_monitoring');
+    localStorage.removeItem('nettrace_entry_price');
+    localStorage.removeItem('nettrace_asset_key');
 
     toggleTradingUI(false);
 
@@ -475,7 +516,10 @@ function lockProfitAndUpdateModal() {
     
     const asset = ASSET_CONFIG[currentAssetKey];
     getLivePrice(asset.geckoId).then(price => {
-        if (price > 0) activeTargets.entryPrice = price;
+        if (price > 0) {
+            activeTargets.entryPrice = price;
+            localStorage.setItem('nettrace_entry_price', price);
+        }
     });
 
     const inputModal = document.getElementById('modal-input');
@@ -486,6 +530,9 @@ function lockProfitAndUpdateModal() {
     if (lockBtn) lockBtn.classList.add('hidden');
 
     alert("Profit Berhasil Dikunci! Modal acuan baru telah diperbarui.");
+    
+    sendDataToGoogleServer(asset.indodaxPair, activeTargets.tpModal, activeTargets.slModal);
+
     updateData();
 }
 
@@ -611,7 +658,44 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     }, 25);
 
-    try { loadSavedInputs(); } catch(e) {}
+    try { 
+        loadSavedInputs(); 
+        
+        // RECOVERY STATUS MONITORING JIKA HALAMAN DI-REFRESH / DIBUKA KEMBALI
+        const isMonitoring = localStorage.getItem('nettrace_is_monitoring');
+        if (isMonitoring === 'true') {
+            const savedModal = getCleanNumber('modal-input');
+            const savedTP = getCleanNumber('tp-price');
+            const savedSL = getCleanNumber('sl-price');
+            const savedEntryPrice = parseFloat(localStorage.getItem('nettrace_entry_price')) || 0;
+            const savedAssetKey = localStorage.getItem('nettrace_asset_key') || 'btc';
+
+            if (savedModal > 0 && savedTP > 0 && savedSL > 0) {
+                currentAssetKey = savedAssetKey;
+                activeTargets.entryPrice = savedEntryPrice;
+                activeTargets.modal = savedModal;
+                activeTargets.netModalAwal = savedModal;
+                activeTargets.tpModal = savedTP;
+                activeTargets.slModal = savedSL;
+                activeTargets.active = true;
+
+                toggleTradingUI(true);
+
+                const statusText = document.getElementById('status-text');
+                if (statusText) {
+                    statusText.innerText = `Status: Monitoring Server 24/7 Aktif 🔥`;
+                    statusText.style.color = "#00f2fe";
+                }
+
+                const btn = document.getElementById('start-btn');
+                if (btn) {
+                    btn.innerText = "MONITORING BERJALAN";
+                    btn.style.background = "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)";
+                    btn.style.color = "#8e9baa";
+                }
+            }
+        }
+    } catch(e) {}
 
     // 2. Listener Input Formatting Titik Rupiah Otomatis
     const modalInput = document.getElementById('modal-input');
