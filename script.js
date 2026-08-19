@@ -1,7 +1,7 @@
 // ============================================================
 // CONFIG & STATE MANAGEMENT
 // ============================================================
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzUiul4OrYMnDOgi_sw6xEvaduit-NyZDwbSwjrTzjhCJkKlKDMJnI6wFq_1rsWSH2h";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzUiul4OrYMnDOgi_sw6xEvaduit-NyZDwbSwjrTzjhCJkKlKDMJnI6wFq_1rsWSH2h/exec";
 
 const ASSET_CONFIG = {
     btc: { symbol: "BTC", label: "HARGA LIVE BITCOIN (IDR)", geckoId: "bitcoin", tvSymbol: "BINANCE:BTCIDR", indodaxPair: "btc_idr" },
@@ -226,511 +226,200 @@ function saveInputsToStorage() {
     saveTelegramConfig();
 }
 // ============================================================
-// DATA LOADING, ALERTS & MONITORING LOGIC
+// CORE TRADING LOGIC & UI UPDATES
 // ============================================================
-
-function loadSavedInputs() {
-    const savedModal = localStorage.getItem('nettrace_modal');
-    const savedTP = localStorage.getItem('nettrace_tp');
-    const savedSL = localStorage.getItem('nettrace_sl');
-    const savedFee = localStorage.getItem('nettrace_fee');
-    const savedToken = localStorage.getItem('nettrace_bot_token');
-    const savedChatId = localStorage.getItem('nettrace_chat_id');
-
-    if (savedModal && document.getElementById('modal-input')) document.getElementById('modal-input').value = savedModal;
-    if (savedTP && document.getElementById('tp-price')) document.getElementById('tp-price').value = savedTP;
-    if (savedSL && document.getElementById('sl-price')) document.getElementById('sl-price').value = savedSL;
-    if (savedFee !== null && document.getElementById('fee-input')) document.getElementById('fee-input').value = savedFee;
+async function fetchCryptoPrice(assetKey) {
+    const asset = ASSET_CONFIG[assetKey];
+    if (!asset) return null;
     
-    if (savedToken && document.getElementById('bot-token-input')) document.getElementById('bot-token-input').value = savedToken;
-    if (savedChatId && document.getElementById('chat-id-input')) document.getElementById('chat-id-input').value = savedChatId;
-}
-
-function setQuickPercent(type, percent) {
-    const rawModal = getCleanNumber('modal-input');
-    if (rawModal <= 0) { alert("Masukkan Modal Beli terlebih dahulu!"); return; }
-
-    const feePercent = getFeePercent() / 100;
-    const netModalAwal = Math.round(rawModal - (rawModal * feePercent));
-
-    if (type === 'TP') {
-        const targetValue = Math.round(netModalAwal * (1 + (percent / 100)));
-        const tpInput = document.getElementById('tp-price');
-        if (tpInput) { tpInput.value = targetValue.toLocaleString('id-ID'); formatRupiahInput(tpInput); }
-    } else if (type === 'SL') {
-        const targetValue = Math.round(netModalAwal * (1 - (percent / 100)));
-        const slInput = document.getElementById('sl-price');
-        if (slInput) { slInput.value = targetValue.toLocaleString('id-ID'); formatRupiahInput(slInput); }
-    }
-}
-
-function showAppAlert(title, desc, theme = 'tp') {
-    const alertEl = document.getElementById('app-alert');
-    const titleEl = document.getElementById('alert-title');
-    const descEl = document.getElementById('alert-desc');
-    const iconEl = document.getElementById('alert-icon');
-
-    if (!alertEl || !titleEl || !descEl) return;
-
-    titleEl.innerText = title;
-    descEl.innerText = desc;
-    alertEl.className = `app-alert show ${theme}-theme`;
-    if (iconEl) iconEl.innerText = theme === 'tp' ? '🎯' : '🚨';
-
-    const notifBody = document.getElementById('notif-pop-body');
-    const notifDot = document.getElementById('notif-dot');
-    if (notifBody) notifBody.innerText = `${title}: ${desc}`;
-    if (notifDot) notifDot.classList.remove('hidden');
-}
-
-function closeAppAlert() {
-    const alertEl = document.getElementById('app-alert');
-    if (alertEl) alertEl.classList.remove('show');
-}
-
-function toggleNotifPop() {
-    const pop = document.getElementById('notif-pop');
-    const dot = document.getElementById('notif-dot');
-    if (pop) pop.classList.toggle('show');
-    if (dot) dot.classList.add('hidden');
-}
-
-async function getLivePrice(geckoId) {
     try {
-        const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${geckoId}&vs_currencies=idr`);
+        const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${asset.geckoId}&vs_currencies=idr`);
+        if (!response.ok) throw new Error('Network response was not ok');
         const data = await response.json();
-        return data[geckoId] ? data[geckoId].idr : 0;
-    } catch (e) { return 0; }
-}
-
-function checkDisclaimerStatus() {
-    if (!localStorage.getItem('nettrace_disclaimer_accepted')) {
-        const modal = document.getElementById('disclaimer-modal');
-        if (modal) modal.classList.add('active');
+        return data[asset.geckoId].idr;
+    } catch (error) {
+        console.error("Gagal mengambil harga:", error);
+        return null;
     }
 }
 
-function acceptDisclaimer() {
-    localStorage.setItem('nettrace_disclaimer_accepted', 'true');
-    const modal = document.getElementById('disclaimer-modal');
-    if (modal) modal.classList.remove('active');
+function startUpdatingPrice() {
+    updatePriceUI();
+    setInterval(updatePriceUI, 5000);
 }
 
-function openFeeModal() {
-    const m = document.getElementById('fee-modal');
-    if (m) m.classList.add('active');
-}
-
-function closeFeeModal() {
-    const m = document.getElementById('fee-modal');
-    if (m) m.classList.remove('active');
-    updateData();
-}
-
-function openInfoModal() {
-    const m = document.getElementById('info-modal');
-    if (m) m.classList.add('active');
-}
-
-function closeInfoModal() {
-    const m = document.getElementById('info-modal');
-    if (m) m.classList.remove('active');
-}
-
-function getFeePercent() {
-    const el = document.getElementById('fee-input');
-    if (!el || !el.value) return 0;
-    return parseFloat(el.value.replace(',', '.')) || 0;
-}
-
-function changeAsset(newKey) {
-    if (!ASSET_CONFIG[newKey]) return;
-    currentAssetKey = newKey;
-    const asset = ASSET_CONFIG[currentAssetKey];
+async function updatePriceUI() {
+    const currentPrice = await fetchCryptoPrice(currentAssetKey);
+    const priceDisplay = document.getElementById('crypto-price');
     
-    const labelEl = document.getElementById('live-price-label');
-    const priceEl = document.getElementById('current-price');
-    if (labelEl) labelEl.innerText = asset.label;
-    if (priceEl) priceEl.innerText = "Rp --";
-    
-    initTradingViewChart(asset.tvSymbol);
-    
-    if (activeTargets.active) {
-        stopMonitoring();
-        alert(`Monitoring dihentikan karena Anda mengganti aset ke ${asset.symbol}.`);
-    } else { updateData(); }
+    if (currentPrice !== null) {
+        priceDisplay.innerText = `Rp ${currentPrice.toLocaleString('id-ID')}`;
+        
+        if (activeTargets.active) {
+            checkTargets(currentPrice);
+        }
+    } else {
+        priceDisplay.innerText = 'Gagal memuat harga';
+    }
 }
 
-function initTradingViewChart(tvSymbol) {
-    const container = document.getElementById('tradingview_chart') || document.getElementById('tradingview_widget');
-    if (!container) return;
+function updateAssetUI(assetKey) {
+    currentAssetKey = assetKey;
+    const asset = ASSET_CONFIG[assetKey];
     
-    container.innerHTML = '';
+    document.querySelectorAll('.koin-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`btn-${assetKey}`).classList.add('active');
     
-    if (typeof TradingView === 'undefined') {
-        container.innerHTML = '<p style="color:#8e9baa; text-align:center; padding-top:20px; font-size:12px;">Grafik gagal dimuat (Cek koneksi CDN TradingView)</p>';
+    const tvWidgetUrl = `https://s.tradingview.com/widgetembed/?frameElementId=tradingview_widget&symbol=${asset.tvSymbol}&interval=1&hidesidetoolbar=1&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=%5B%5D&theme=dark&style=1&timezone=Asia%2FJakarta&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=id&utm_source=localhost&utm_medium=widget_new&utm_campaign=chart&utm_term=${asset.tvSymbol}`;
+    document.getElementById('tv-iframe').src = tvWidgetUrl;
+    document.getElementById('asset-label').innerText = asset.label;
+    
+    updatePriceUI();
+}
+
+function startMonitoring() {
+    const modalInput = document.getElementById('modal-input').value.replace(/\D/g, '');
+    const tpInput = document.getElementById('tp-price').value.replace(/\D/g, '');
+    const slInput = document.getElementById('sl-price').value.replace(/\D/g, '');
+    const feeInput = document.getElementById('fee-input').value.replace(/\D/g, '');
+    const feePercent = parseFloat(feeInput) || 0;
+
+    if (!modalInput || !tpInput || !slInput) {
+        alert("Harap isi Modal, TP, dan SL!");
         return;
     }
 
-    try {
-        new TradingView.widget({
-            "autosize": true,
-            "symbol": tvSymbol,
-            "theme": "dark",
-            "container_id": container.id,
-            "interval": "D",
-            "locale": "id"
-        });
-    } catch (e) { console.error("TradingView Error:", e); }
-}
+    const modal = parseInt(modalInput, 10);
+    const tp = parseInt(tpInput, 10);
+    const sl = parseInt(slInput, 10);
+    const feeAmount = modal * (feePercent / 100);
+    const netModal = modal - feeAmount;
 
-function getCleanNumber(elementId) {
-    const el = document.getElementById(elementId);
-    if (!el) return 0;
-    return parseFloat(el.value.replace(/\./g, '')) || 0;
-}
-
-async function startMonitoring() {
-    saveTelegramConfig();
-    const rawModal = getCleanNumber('modal-input');
-    const tpModal = getCleanNumber('tp-price');
-    const slModal = getCleanNumber('sl-price');
+    activeTargets = { 
+        modal: modal, 
+        netModalAwal: netModal, 
+        tpModal: tp, 
+        slModal: sl, 
+        entryPrice: 0,
+        active: true 
+    };
+    currentCalculatedModal = netModal;
+    isTPSent = false;
+    isSLSent = false;
     
-    if (rawModal === 0 || tpModal === 0 || slModal === 0) {
-        alert("Mohon isi Modal, Target TP, dan Target SL!");
-        return;
+    toggleTradingUI(true);
+
+    document.getElementById('display-modal').innerText = `Rp ${currentCalculatedModal.toLocaleString('id-ID')}`;
+    document.getElementById('display-tp').innerText = `Rp ${tp.toLocaleString('id-ID')}`;
+    document.getElementById('display-sl').innerText = `Rp ${sl.toLocaleString('id-ID')}`;
+    
+    document.getElementById('status-indicator').classList.add('active');
+    document.getElementById('status-text').innerText = 'MONITORING AKTIF';
+    
+    document.getElementById('btn-start').style.display = 'none';
+    document.getElementById('btn-stop').style.display = 'block';
+
+    const { token, chatId } = getTelegramConfig();
+    const assetPair = ASSET_CONFIG[currentAssetKey].indodaxPair;
+    
+    if (token && chatId) {
+        sendDataToGoogleServer(assetPair, tp, sl);
+        sendTelegramMessage(`🟢 <b>NETTRACE MONITORING DIMULAI (WEB+SERVER)</b>\n\nAsset: <b>${ASSET_CONFIG[currentAssetKey].symbol}</b>\nModal Bersih: Rp ${netModal.toLocaleString('id-ID')}\nTarget TP: Rp ${tp.toLocaleString('id-ID')}\nTarget SL: Rp ${sl.toLocaleString('id-ID')}`);
+    } else {
+        alert("Monitoring berjalan lokal. Token Bot / Chat ID Telegram belum diisi di Pengaturan.");
     }
-
-    const feePercent = getFeePercent() / 100;
-    const netModalAwal = Math.round(rawModal - (rawModal * feePercent));
-
-    document.getElementById('modal-input').value = netModalAwal.toLocaleString('id-ID');
-    saveInputsToStorage();
-
-    try {
-        const asset = ASSET_CONFIG[currentAssetKey];
-        const currentPrice = await getLivePrice(asset.geckoId);
-        
-        if (!currentPrice || isNaN(currentPrice)) {
-            alert("Gagal terhubung ke API Harga. Periksa koneksi internet.");
-            return;
-        }
-
-        activeTargets.entryPrice = currentPrice;
-        activeTargets.modal = netModalAwal;
-        activeTargets.netModalAwal = netModalAwal;
-        activeTargets.tpModal = tpModal;
-        activeTargets.slModal = slModal;
-        activeTargets.active = true;
-
-        isTPSent = false;
-        isSLSent = false;
-        
-        // Simpan status monitoring ke memori browser
-        localStorage.setItem('nettrace_is_monitoring', 'true');
-        localStorage.setItem('nettrace_entry_price', currentPrice);
-        localStorage.setItem('nettrace_asset_key', currentAssetKey);
-
-        toggleTradingUI(true);
-
-        const statusText = document.getElementById('status-text');
-        if (statusText) {
-            statusText.innerText = `Status: Monitoring Server 24/7 Aktif 🔥`;
-            statusText.style.color = "#00f2fe";
-        }
-        
-        const btn = document.getElementById('start-btn');
-        if (btn) {
-            btn.innerText = "MONITORING BERJALAN";
-            btn.style.background = "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)";
-            btn.style.color = "#8e9baa";
-        }
-
-        const startMsg = `🚀 <b>MONITORING AKTIF!</b>\n\nAset: <b>${asset.symbol}/IDR</b>\nHarga Entry: <b>Rp ${currentPrice.toLocaleString('id-ID')}</b>\nModal Beli: <b>Rp ${netModalAwal.toLocaleString('id-ID')}</b>\nTarget TP: <b>Rp ${tpModal.toLocaleString('id-ID')}</b>\nTarget SL: <b>Rp ${slModal.toLocaleString('id-ID')}</b>`;
-        sendTelegramMessage(startMsg);
-
-        // KIRIM DATA KE SERVER GOOGLE
-        sendDataToGoogleServer(asset.indodaxPair, tpModal, slModal);
-
-        updateData();
-    } catch(e) { alert("Gagal terhubung ke API Harga."); }
 }
 
 function stopMonitoring() {
     activeTargets.active = false;
-    currentCalculatedModal = 0;
-    isTPSent = false;
-    isSLSent = false;
-
-    // Hapus status monitoring di memori browser
-    localStorage.removeItem('nettrace_is_monitoring');
-    localStorage.removeItem('nettrace_entry_price');
-    localStorage.removeItem('nettrace_asset_key');
-
     toggleTradingUI(false);
-
-    const m = document.getElementById('modal-input');
-    const tp = document.getElementById('tp-price');
-    const sl = document.getElementById('sl-price');
-
-    if (m) m.value = '';
-    if (tp) tp.value = '';
-    if (sl) sl.value = '';
     
-    localStorage.removeItem('nettrace_modal');
-    localStorage.removeItem('nettrace_tp');
-    localStorage.removeItem('nettrace_sl');
-
-    const statusText = document.getElementById('status-text');
-    if (statusText) {
-        statusText.innerText = "Status: Siap monitoring.";
-        statusText.style.color = "#8e9baa";
-    }
+    document.getElementById('status-indicator').classList.remove('active');
+    document.getElementById('status-text').innerText = 'TIDAK AKTIF';
     
-    const btn = document.getElementById('start-btn');
-    if (btn) {
-        btn.innerText = "MULAI MONITORING";
-        btn.style.background = "linear-gradient(135deg, #00f2fe 0%, #4facfe 100%)";
-        btn.style.color = "#050b14";
+    document.getElementById('btn-start').style.display = 'block';
+    document.getElementById('btn-stop').style.display = 'none';
+
+    document.getElementById('display-modal').innerText = '-';
+    document.getElementById('display-tp').innerText = '-';
+    document.getElementById('display-sl').innerText = '-';
+
+    const { token, chatId } = getTelegramConfig();
+    const assetPair = ASSET_CONFIG[currentAssetKey].indodaxPair;
+
+    if (token && chatId) {
+        sendDataToGoogleServer(assetPair, 0, 0);
+        sendTelegramMessage(`🔴 <b>NETTRACE MONITORING DIHENTIKAN</b>\n\nPemantauan untuk <b>${ASSET_CONFIG[currentAssetKey].symbol}</b> telah dimatikan dari Web.`);
     }
-
-    const port = document.getElementById('portfolio-value');
-    if (port) {
-        port.innerText = "Rp 0 (0.00%)";
-        port.style.color = "#8e9baa";
-    }
-
-    const lockBtn = document.getElementById('lock-profit-btn');
-    if (lockBtn) lockBtn.classList.add('hidden');
-
-    closeAppAlert();
-    updateRecommendation(0, 0, 0);
 }
 
-function lockProfitAndUpdateModal() {
-    if (!activeTargets.active || currentCalculatedModal <= 0) return;
+function checkTargets(currentPrice) {
+    if (activeTargets.entryPrice === 0) activeTargets.entryPrice = currentPrice;
+
+    let growthPercentage = ((currentPrice - activeTargets.entryPrice) / activeTargets.entryPrice);
+    currentCalculatedModal = activeTargets.netModalAwal + (activeTargets.netModalAwal * growthPercentage);
     
-    const roundedModal = Math.round(currentCalculatedModal);
-    activeTargets.modal = roundedModal;
-    activeTargets.netModalAwal = roundedModal;
+    document.getElementById('display-modal').innerText = `Rp ${Math.round(currentCalculatedModal).toLocaleString('id-ID')}`;
+
+    if (currentCalculatedModal >= activeTargets.tpModal && !isTPSent) {
+        isTPSent = true;
+        playAlertSound('TP');
+        sendTelegramMessage(`🚀 <b>TARGET TP TERCAPAI (WEB ALERT)!</b>\n\nAsset: <b>${ASSET_CONFIG[currentAssetKey].symbol}</b>\nModal Saat Ini: Rp ${Math.round(currentCalculatedModal).toLocaleString('id-ID')}\nTarget TP: Rp ${activeTargets.tpModal.toLocaleString('id-ID')}`);
+        setTimeout(() => {
+            alert("🚀 TARGET TP TERCAPAI!");
+            stopMonitoring();
+        }, 500);
+    } else if (currentCalculatedModal <= activeTargets.slModal && !isSLSent) {
+        isSLSent = true;
+        playAlertSound('SL');
+        sendTelegramMessage(`⚠️ <b>TARGET SL TERCAPAI (WEB ALERT)!</b>\n\nAsset: <b>${ASSET_CONFIG[currentAssetKey].symbol}</b>\nModal Saat Ini: Rp ${Math.round(currentCalculatedModal).toLocaleString('id-ID')}\nTarget SL: Rp ${activeTargets.slModal.toLocaleString('id-ID')}`);
+        setTimeout(() => {
+            alert("⚠️ TARGET SL TERCAPAI!");
+            stopMonitoring();
+        }, 500);
+    }
+}
+
+function loadSavedInputs() {
+    const modal = localStorage.getItem('nettrace_modal');
+    const tp = localStorage.getItem('nettrace_tp');
+    const sl = localStorage.getItem('nettrace_sl');
+    const fee = localStorage.getItem('nettrace_fee');
+    const token = localStorage.getItem('nettrace_bot_token');
+    const chatId = localStorage.getItem('nettrace_chat_id');
+
+    if (modal) document.getElementById('modal-input').value = modal;
+    if (tp) document.getElementById('tp-price').value = tp;
+    if (sl) document.getElementById('sl-price').value = sl;
+    if (fee) document.getElementById('fee-input').value = fee;
+    if (token) {
+        const tokenInput = document.getElementById('bot-token-input');
+        if(tokenInput) tokenInput.value = token;
+    }
+    if (chatId) {
+        const chatIdInput = document.getElementById('chat-id-input');
+        if(chatIdInput) chatIdInput.value = chatId;
+    }
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+    checkUserLogin();
     
-    const asset = ASSET_CONFIG[currentAssetKey];
-    getLivePrice(asset.geckoId).then(price => {
-        if (price > 0) {
-            activeTargets.entryPrice = price;
-            localStorage.setItem('nettrace_entry_price', price);
-        }
+    const activeUser = localStorage.getItem('nettrace_active_user');
+    if (activeUser) {
+        const elUsername = document.getElementById('display-username');
+        if (elUsername) elUsername.innerText = activeUser;
+    }
+    
+    document.querySelectorAll('.koin-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            updateAssetUI(e.target.dataset.asset);
+        });
     });
 
-    const inputModal = document.getElementById('modal-input');
-    if (inputModal) inputModal.value = roundedModal.toLocaleString('id-ID');
-    saveInputsToStorage();
-
-    const lockBtn = document.getElementById('lock-profit-btn');
-    if (lockBtn) lockBtn.classList.add('hidden');
-
-    alert("Profit Berhasil Dikunci! Modal acuan baru telah diperbarui.");
-    
-    sendDataToGoogleServer(asset.indodaxPair, activeTargets.tpModal, activeTargets.slModal);
-
-    updateData();
-}
-
-async function updateData() {
-    try {
-        const asset = ASSET_CONFIG[currentAssetKey];
-        const currentPrice = await getLivePrice(asset.geckoId);
-        
-        const priceLabel = document.getElementById('current-price');
-        if (priceLabel && currentPrice > 0) {
-            priceLabel.innerText = "Rp " + currentPrice.toLocaleString('id-ID');
-        }
-
-        if (activeTargets.active && activeTargets.entryPrice > 0 && currentPrice > 0) {
-            const rasioPerubahan = currentPrice / activeTargets.entryPrice;
-            currentCalculatedModal = activeTargets.netModalAwal * rasioPerubahan;
-            
-            const roundedModal = Math.round(currentCalculatedModal);
-            
-            let persenPerubahan = activeTargets.modal > 0 
-                ? ((currentCalculatedModal - activeTargets.modal) / activeTargets.modal) * 100 
-                : 0;
-
-            if (Math.abs(persenPerubahan) < 0.001) persenPerubahan = 0;
-
-            const el = document.getElementById('portfolio-value');
-            const isProfit = roundedModal >= activeTargets.modal;
-            
-            const modalFormatted = roundedModal.toLocaleString('id-ID');
-            let persenFormatted = persenPerubahan.toFixed(2) + '%';
-            if (persenPerubahan > 0) persenFormatted = '+' + persenFormatted;
-
-            if (el) {
-                el.innerText = `Rp ${modalFormatted} (${persenFormatted})`;
-                el.style.color = isProfit ? "#00e676" : "#ff1744";
-            }
-
-            const lockBtn = document.getElementById('lock-profit-btn');
-            if (lockBtn) {
-                if (roundedModal > activeTargets.modal) lockBtn.classList.remove('hidden');
-                else lockBtn.classList.add('hidden');
-            }
-
-            if (roundedModal >= activeTargets.tpModal && !isTPSent) {
-                isTPSent = true;
-                playAlertSound('TP');
-                const msg = `🎯 <b>TARGET TAKE PROFIT TERSENTUH!</b>\n\nAset: <b>${asset.symbol}</b>\nEstimasi Modal: <b>Rp ${modalFormatted}</b>\nTarget TP: <b>Rp ${activeTargets.tpModal.toLocaleString('id-ID')}</b>\nKeuntungan: <b>${persenFormatted}</b>`;
-                sendTelegramMessage(msg);
-                showAppAlert("TAKE PROFIT!", `Modal menyentuh target Rp ${activeTargets.tpModal.toLocaleString('id-ID')}`, 'tp');
-            } else if (roundedModal <= activeTargets.slModal && !isSLSent) {
-                isSLSent = true;
-                playAlertSound('SL');
-                const msg = `🚨 <b>STOP LOSS TERSENTUH!</b>\n\nAset: <b>${asset.symbol}</b>\nEstimasi Modal: <b>Rp ${modalFormatted}</b>\nTarget SL: <b>Rp ${activeTargets.slModal.toLocaleString('id-ID')}</b>\nKerugian: <b>${persenFormatted}</b>`;
-                sendTelegramMessage(msg);
-                showAppAlert("STOP LOSS!", `Modal menyentuh batas Rp ${activeTargets.slModal.toLocaleString('id-ID')}`, 'sl');
-            }
-
-            updateRecommendation(roundedModal, activeTargets.tpModal, activeTargets.slModal);
-        } else if (!activeTargets.active) {
-            updateRecommendation(0, 0, 0);
-        }
-    } catch (e) {}
-}
-
-function updateRecommendation(currentModal, tpModal, slModal) {
-    const badge = document.getElementById('recom-badge');
-    const desc = document.getElementById('recom-desc');
-    if (!badge || !desc) return;
-
-    if (!activeTargets.active) {
-        badge.className = 'recom-badge standby';
-        badge.innerText = 'STANDBY';
-        desc.innerText = 'Sistem siap. Masukkan modal & target lalu klik Mulai Monitor.';
-        return;
-    }
-
-    if (currentModal >= tpModal) {
-        badge.className = 'recom-badge sell-tp';
-        badge.innerText = 'SELL / TAKE PROFIT!';
-        desc.innerText = 'Target profit tersentuh! Lakukan penjualan di pasar sekarang.';
-    } else if (currentModal <= slModal) {
-        badge.className = 'recom-badge cut-sl';
-        badge.innerText = 'CUT LOSS NOW!';
-        desc.innerText = '🚨 Target Stop Loss tersentuh! Modal bersih Anda terancam.';
-    } else {
-        badge.className = 'recom-badge hold';
-        badge.innerText = 'HOLD / MONITORING';
-        desc.innerText = '🟢 Pergerakan modal masih aman dalam zona target. Biarkan posisi berjalan.';
-    }
-}
-
-// ============================================================
-// EVENT LISTENERS & INITIALIZATION
-// ============================================================
-
-window.addEventListener('DOMContentLoaded', () => {
-    // 1. Inisialisasi Loading Bar
-    let progress = 1;
-    const bar = document.getElementById('progress-bar');
-    const text = document.getElementById('progress-text');
-    const loader = document.getElementById('loader-wrapper');
-
-    const interval = setInterval(() => {
-        progress += Math.floor(Math.random() * 8) + 4;
-        if (progress >= 100) {
-            progress = 100;
-            if (bar) bar.style.width = '100%';
-            if (text) text.innerText = '100%';
-            clearInterval(interval);
-            
-            setTimeout(() => {
-                if (loader) {
-                    loader.style.opacity = '0';
-                    loader.style.visibility = 'hidden';
-                }
-                checkUserLogin();
-                checkDisclaimerStatus();
-                initTradingViewChart(ASSET_CONFIG[currentAssetKey].tvSymbol);
-            }, 200);
-        } else {
-            if (bar) bar.style.width = progress + '%';
-            if (text) text.innerText = progress + '%';
-        }
-    }, 25);
-
-    try { 
-        loadSavedInputs(); 
-        
-        // RECOVERY STATUS MONITORING JIKA HALAMAN DI-REFRESH / DIBUKA KEMBALI
-        const isMonitoring = localStorage.getItem('nettrace_is_monitoring');
-        if (isMonitoring === 'true') {
-            const savedModal = getCleanNumber('modal-input');
-            const savedTP = getCleanNumber('tp-price');
-            const savedSL = getCleanNumber('sl-price');
-            const savedEntryPrice = parseFloat(localStorage.getItem('nettrace_entry_price')) || 0;
-            const savedAssetKey = localStorage.getItem('nettrace_asset_key') || 'btc';
-
-            if (savedModal > 0 && savedTP > 0 && savedSL > 0) {
-                currentAssetKey = savedAssetKey;
-                activeTargets.entryPrice = savedEntryPrice;
-                activeTargets.modal = savedModal;
-                activeTargets.netModalAwal = savedModal;
-                activeTargets.tpModal = savedTP;
-                activeTargets.slModal = savedSL;
-                activeTargets.active = true;
-
-                toggleTradingUI(true);
-
-                const statusText = document.getElementById('status-text');
-                if (statusText) {
-                    statusText.innerText = `Status: Monitoring Server 24/7 Aktif 🔥`;
-                    statusText.style.color = "#00f2fe";
-                }
-
-                const btn = document.getElementById('start-btn');
-                if (btn) {
-                    btn.innerText = "MONITORING BERJALAN";
-                    btn.style.background = "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)";
-                    btn.style.color = "#8e9baa";
-                }
-            }
-        }
-    } catch(e) {}
-
-    // 2. Listener Input Formatting Titik Rupiah Otomatis
-    const modalInput = document.getElementById('modal-input');
-    const tpInput = document.getElementById('tp-price');
-    const slInput = document.getElementById('sl-price');
-
-    if (modalInput) {
-        modalInput.addEventListener('input', (e) => formatRupiahInput(e.target));
-    }
-    if (tpInput) {
-        tpInput.addEventListener('input', (e) => formatRupiahInput(e.target));
-    }
-    if (slInput) {
-        slInput.addEventListener('input', (e) => formatRupiahInput(e.target));
-    }
-
-    // 3. Listener Tombol Mulai / Stop Monitoring
-    const startBtn = document.getElementById('start-btn');
-    if (startBtn) {
-        startBtn.addEventListener('click', () => {
-            if (activeTargets.active) {
-                stopMonitoring();
-            } else {
-                startMonitoring();
-            }
-        });
-    }
-
-    // 4. Listener Dropdown Ganti Aset
-    const assetSelect = document.getElementById('asset-select') || document.getElementById('assetSelect');
-    if (assetSelect) {
-        assetSelect.addEventListener('change', (e) => changeAsset(e.target.value));
-    }
+    updateAssetUI('btc');
+    startUpdatingPrice();
 });
-
-// Loop Pembaruan Data Secara Real-Time (Setiap 5 Detik)
-setInterval(updateData, 5000);
-updateData();
